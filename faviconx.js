@@ -1,55 +1,71 @@
 /**
- * A dynamic progress / loading bar done through the favicon
+ * A tiny javascript library that makes progress bars out of the favicon placeholders
+ * Check nicolasbize.github.io/faviconx/ for latest updates.
+ *
+ * Author:       Nicolas Bize
+ * Created:      Oct 10th 2013
+ * Last Updated: Oct 15th 2014
+ * Version:      1.0.0
+ * Licence:      FavIconX is licenced under MIT licence (http://opensource.org/licenses/MIT)
  */
-
-// we only want a global var here since we shouldn't be able to have multiple instances of this...
-// this is why we are using the module pattern.
 var FavIconX = (function() {
-
-    //////// PRIVATE VARIABLES ///////
+    // my private parts, do not mess with them.
     var originalIcon;
-    var bitmap = null; // bitmap holder
-    var value = 0; // 0 => 100;
+    var value = 0;
     var animValue = 0;
     var canvas = document.createElement('canvas');
-    var context; // context
-    var icon; // the generated icon
+    var context;
+    var icon; // image storage
     var animInterval = null;
     var animCallback = null;
     var oldTitle = "";
 
-    // properties accessed through getters/setters
-    var shape = 'square';
-    var animated = false;
-    var animationSpeed = 2000; // ms to go from state 1 to state 2
-    var borderColor = '#3a70b1';
-    var borderColor2 = null;
-    var borderWidth = 1;
-    var fillColor = '#3a70b1';
-    var fillColor2 = null;
-    var updateTitle = true;
-    var titleRenderer = function(val, title){
-        return '[' + val + '%] - ' + title;
-    };
+    // default values for properties accessed through .config() method:
+    var shape;
+    var animated;
+    var animationSpeed; // ms to go from one value to the one from setValue
+    var borderColor;
+    var borderColor2;
+    var shadowColor;
+    var borderWidth;
+    var fillColor;
+    var fillColor2;
+    var updateTitle;
+    var titleRenderer;
 
-    //////// PRIVATE METHODS ////////
-    /**
-     * Creates the image depending upon the type and value
-     */
+    function setDefaults(){
+        shape = 'circle';
+        animated = false;
+        animationSpeed = 2000;
+        borderColor = '#3A70B1';
+        borderColor2 = null;
+        shadowColor = 'rgba(255, 0, 0, 0)';
+        borderWidth = 1;
+        fillColor = '#3A70B1';
+        fillColor2 = null;
+        updateTitle = true;
+        titleRenderer = function(val, title){
+            return '[' + val + '%] - ' + title;
+        };
+    }
+
+    // Generates the wanted shape
     function generateBitmap(v){
         if(shape === 'circle'){
             generateCircle(v);
         } else if(shape === 'doughnut'){
-            generateDonut(v);
+            generateDoughnut(v);
         } else if(shape === 'square'){
             generateSquare(v);
         }
     }
 
+    // (255, 0, 0) => "#FF0000"
     function rgbToHex(r, g, b) {
         return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
     }
 
+    // "#FF0000" => [255, 0, 0]
     function hexToRgb(hex) {
         hex = hex.indexOf("#") === 0 ? hex.substring(1) : hex;
         var nb = parseInt(hex, 16);
@@ -57,6 +73,11 @@ var FavIconX = (function() {
         var g = (nb >> 8) & 255;
         var b = nb & 255;
         return [r,g,b];
+    }
+
+    // because i don't speak in radians
+    function toRad(deg){
+        return deg * Math.PI / 180;
     }
 
     // gets a mid color according to current value
@@ -72,11 +93,7 @@ var FavIconX = (function() {
         return rgbToHex(Math.round(avg[0]), Math.round(avg[1]), Math.round(avg[2]));
     }
 
-    // 22 - 180 ... 20% :
-
-    /**
-     * Draws a filled circle
-     */
+    // let's get a boring circle first
     function generateCircle(v){
         var graphValue = v || value;
         var centerX = canvas.width / 2;
@@ -90,6 +107,8 @@ var FavIconX = (function() {
         context.beginPath();
         context.arc(centerX, centerY, radius, 0, toRad(360), false);
         context.closePath();
+        context.fillStyle = shadowColor;
+        context.fill();
         context.stroke();
         if(graphValue > 0){
             context.fillStyle = fillColor2 ? getMidColor(fillColor, fillColor2) : fillColor;
@@ -101,10 +120,8 @@ var FavIconX = (function() {
         }
     }
 
-    /**
-     * Draws a donut
-     */
-    function generateDonut(v){
+    // spelling doughnut just feels wrong
+    function generateDoughnut(v){
         var graphValue = v || value;
         var centerX = canvas.width / 2;
         var centerY = canvas.height / 2;
@@ -113,6 +130,13 @@ var FavIconX = (function() {
         canvas.width = canvas.width;
         if(graphValue > 0){
             context.lineWidth = borderWidth;
+            context.strokeStyle = shadowColor;
+            context.beginPath();
+            context.arc(centerX, centerY, 6, 0, toRad(360), false);
+            context.arc(centerX, centerY, 6 - borderWidth, 0, toRad(360), true);
+            context.closePath();
+            context.stroke();
+
             context.strokeStyle = borderColor2 ? getMidColor(borderColor, borderColor2) : borderColor;
             context.beginPath();
             context.arc(centerX, centerY, 6, toRad(-90), toRad(deg), false);
@@ -122,6 +146,7 @@ var FavIconX = (function() {
         }
     }
 
+    // something a bit more fancy
     function generateSquare(v){
         var graphValue = v || value;
         var centerX = canvas.width / 2;
@@ -137,7 +162,7 @@ var FavIconX = (function() {
         context.beginPath();
         context.strokeStyle = borderColor2 ? getMidColor(borderColor, borderColor2) : borderColor;
         context.lineWidth = borderWidth;
-        context.fillStyle = fillColor;
+        context.fillStyle = shadowColor;
         context.moveTo(x + borderRadius, y);
         context.lineTo(x + width - borderRadius, y);
         context.quadraticCurveTo(x + width, y, x + width, y + borderRadius);
@@ -153,7 +178,7 @@ var FavIconX = (function() {
             context.clip();
             context.beginPath();
             context.moveTo(8,8);
-            context.fillStyle="rgba(255, 0, 0, 0)";
+            context.fillStyle = 'rgba(255, 0, 0, 0)';
             context.arc(centerX, centerY, 12, toRad(-90), toRad(deg), false); // we clip the rest
             context.closePath();
             context.fill();
@@ -174,6 +199,7 @@ var FavIconX = (function() {
         }
     }
 
+    // draw me a check mark
     function generateSuccess(bgColor, fgColor){
         var centerX = canvas.width / 2;
         var centerY = canvas.height / 2;
@@ -181,7 +207,7 @@ var FavIconX = (function() {
         canvas.width = canvas.width;
         context.beginPath();
         context.arc(centerX, centerY, 8, 0, 2 * Math.PI, false);
-        context.fillStyle = bgColor || '#53c516';
+        context.fillStyle = bgColor || '#53C516';
         context.fill();
 
         context.beginPath();
@@ -194,13 +220,14 @@ var FavIconX = (function() {
 
     }
 
+    // how about the red cross of death?
     function generateFailure(bgColor, fgColor){
         var centerX = canvas.width / 2;
         var centerY = canvas.height / 2;
 
       context.beginPath();
       context.arc(centerX, centerY, 8, 0, 2 * Math.PI, false);
-      context.fillStyle = bgColor || '#f6491f';
+      context.fillStyle = bgColor || '#F6491F';
       context.fill();
 
       context.beginPath();
@@ -214,9 +241,7 @@ var FavIconX = (function() {
 
     }
 
-    /**
-     * Refresh browser icon
-     */
+    // refresh the tab favicon
     function refreshFavIcon(){
         icon.setAttribute('href', canvas.toDataURL("image/x-icon"));
         if(updateTitle){
@@ -224,10 +249,8 @@ var FavIconX = (function() {
         }
     }
 
-
-    /**
-     * Creates or points to the page favicon
-     */
+    // either we already have a favicon and we want to keep it for resets...
+    // or we create one that we call bob and that we care for
     function getIconRef(){
         var els = document.getElementsByTagName('link');
         if(els.length > 0){
@@ -245,9 +268,8 @@ var FavIconX = (function() {
         document.getElementsByTagName('head')[0].appendChild(newIcon);
         return newIcon;
     }
-    /**
-     * This is where the magic starts
-     */
+
+    // starting point to the app... couldn't hide it in the code better
     function init(){
         if(canvas && canvas.getContext){
             icon = getIconRef();
@@ -259,10 +281,7 @@ var FavIconX = (function() {
         }
     }
 
-    function toRad(deg){
-        return deg * Math.PI / 180;
-    }
-
+    // animation: called again and again until we get to the right value
     function incValue(inc){
         animValue += inc;
         generateBitmap(animValue);
@@ -278,18 +297,20 @@ var FavIconX = (function() {
         }
     }
 
+    // this, as the method name suggests, is called once the anim has stopped.
     function stopAnim(){
-        if(animCallback !== undefined){
+        if(animCallback){
             animCallback.call(this, value);
         }
     }
 
+    // let's get things started.
+    setDefaults();
     init();
 
+    // we get to the public methods now.
     return {
-        /**
-         * sets a bunch of setters at once
-         */
+        // a helper to configure mucho settings at once
         config: function(cfg){
             shape = cfg.shape || shape;
             animated = cfg.animated || animated;
@@ -297,19 +318,25 @@ var FavIconX = (function() {
             borderColor = cfg.borderColor || borderColor;
             borderColor2 = cfg.borderColor2 || borderColor2;
             borderWidth = cfg.borderWidth || borderWidth;
+            shadowColor = cfg.shadowColor || shadowColor;
             fillColor = cfg.fillColor || fillColor;
             fillColor2 = cfg.fillColor2 || fillColor2;
             updateTitle = cfg.updateTitle || updateTitle;
             titleRenderer = cfg.titleRenderer || titleRenderer;
+            animCallback = cfg.callback !== undefined ? cfg.callback : animCallback;
+            generateBitmap();
+            refreshFavIcon();
             return FavIconX;
         },
 
-        /**
-         * value between 0 and 100 (0 = 0 , 100 = 2PI)
-         **/
+        // setValue(value, [animated], [speed], [callback])
+        // value must be between 0 and 100
+        // when specified the animated overrides the component setting.
+        // when specified the speed orrides the component setting
+        // callback called once the animation is finished
         setValue: function(v, isAnimated, animSpeed, callback){
             if(v<0 || v>100) throw 'value must be between 0 and 100';
-            animCallback = callback;
+            animCallback = callback !== undefined ? callback : animCallback;
             animValue = value;
             value = v;
             if(isAnimated !== undefined ? isAnimated : animated){
@@ -329,11 +356,14 @@ var FavIconX = (function() {
             return FavIconX;
         },
 
+        // returns the current value of the widget
         getValue: function(){
-            return value;
+            return animValue || value;
         },
 
+        // restoring the past... or is it...
         reset: function(){
+            setDefaults();
             if(originalIcon){
                 icon.setAttribute('href', originalIcon.getAttribute('href'));
             }
@@ -343,12 +373,14 @@ var FavIconX = (function() {
             return FavIconX;
         },
 
+        // displays the awesome checkbox. colors can be tweaked here
         complete: function(fgColor, bgColor){
             generateSuccess(fgColor, bgColor);
             refreshFavIcon();
             document.title = oldTitle;
         },
 
+        // displays the even more awesome cross. colors can be tweaked here
         fail: function(fgColor, bgColor){
             generateFailure(fgColor, bgColor);
             refreshFavIcon();

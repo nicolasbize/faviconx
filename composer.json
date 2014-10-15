@@ -1,0 +1,15 @@
+{
+    "name": "nicolasbize/faviconx",
+    "description": "A tiny javascript library that makes progress bars out of the favicon placeholders.",
+    "version": "1.0.0",
+    "type": "component",
+    "homepage": "http://nicolasbize.com/faviconx",
+    "license": "MIT",
+    "extra": {
+        "component": {
+            "scripts": [
+                "faviconx.js"
+            ]
+        }
+    }
+}
