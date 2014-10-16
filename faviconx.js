@@ -38,6 +38,7 @@ var FavIconX = (function() {
         shape = 'circle';
         animated = false;
         animationSpeed = 2000;
+        animCallback = null;
         borderColor = '#3A70B1';
         borderColor2 = null;
         shadowColor = 'rgba(255, 0, 0, 0)';
