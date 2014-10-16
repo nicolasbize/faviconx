@@ -20,6 +20,7 @@ var FavIconX = (function() {
     var animCallback = null;
     var oldTitle = "";
     var head = null;
+    var isReset = null;
 
     // default values for properties accessed through .config() method:
     var shape;
@@ -47,6 +48,7 @@ var FavIconX = (function() {
         fillColor2 = null;
         updateTitle = true;
         value = 0;
+        isReset = true;
         titleRenderer = function(val, title){
             return '[' + val + '%] - ' + title;
         };
@@ -290,15 +292,17 @@ var FavIconX = (function() {
     // animation: called again and again until we get to the right value
     function incValue(inc){
         animValue += inc;
-        generateBitmap(animValue);
-        refreshFavIcon();
-        if(animValue !== null){
-            if(animValue === value){
-                stopAnim();
-            } else {
-                setTimeout(function(){
-                    incValue(animValue > value ? -1 : 1);
-                }, animInterval);
+        if(isReset !== true){
+            generateBitmap(animValue);
+            refreshFavIcon();
+            if(animValue !== null && animated){
+                if(animValue === value){
+                    stopAnim();
+                } else {
+                    setTimeout(function(){
+                        incValue(animValue > value ? -1 : 1);
+                    }, animInterval);
+                }
             }
         }
     }
@@ -320,6 +324,7 @@ var FavIconX = (function() {
         // a helper to configure mucho settings at once
         config: function(cfg){
             shape = cfg.shape || shape;
+            isReset = false;
             animated = cfg.animated || animated;
             animationSpeed = cfg.animationSpeed || animationSpeed;
             borderColor = cfg.borderColor || borderColor;
@@ -346,6 +351,7 @@ var FavIconX = (function() {
             animCallback = callback !== undefined ? callback : animCallback;
             animValue = value;
             value = v;
+            isReset = false;
             if(isAnimated !== undefined ? isAnimated : animated){
                 var steps = animValue - value;
                 if(animValue !== value){
@@ -384,6 +390,7 @@ var FavIconX = (function() {
 
         // displays the awesome checkbox. colors can be tweaked here
         complete: function(fgColor, bgColor){
+            isReset = false;
             generateSuccess(fgColor, bgColor);
             refreshFavIcon();
             document.title = oldTitle;
@@ -391,6 +398,7 @@ var FavIconX = (function() {
 
         // displays the even more awesome cross. colors can be tweaked here
         fail: function(fgColor, bgColor){
+            isReset = false;
             generateFailure(fgColor, bgColor);
             refreshFavIcon();
             document.title = oldTitle;
