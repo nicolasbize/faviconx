@@ -19,6 +19,7 @@ var FavIconX = (function() {
     var animInterval = null;
     var animCallback = null;
     var oldTitle = "";
+    var head = null;
 
     // default values for properties accessed through .config() method:
     var shape;
@@ -44,6 +45,7 @@ var FavIconX = (function() {
         fillColor = '#3A70B1';
         fillColor2 = null;
         updateTitle = true;
+        value = 0;
         titleRenderer = function(val, title){
             return '[' + val + '%] - ' + title;
         };
@@ -137,7 +139,7 @@ var FavIconX = (function() {
             context.closePath();
             context.stroke();
 
-            context.strokeStyle = borderColor2 ? getMidColor(borderColor, borderColor2) : borderColor;
+            context.strokeStyle = fillColor2 ? getMidColor(fillColor, fillColor2) : fillColor;
             context.beginPath();
             context.arc(centerX, centerY, 6, toRad(-90), toRad(deg), false);
             context.arc(centerX, centerY, 6 - borderWidth, toRad(deg), toRad(-90), true);
@@ -243,7 +245,9 @@ var FavIconX = (function() {
 
     // refresh the tab favicon
     function refreshFavIcon(){
+        head.removeChild(icon);
         icon.setAttribute('href', canvas.toDataURL("image/x-icon"));
+        head.appendChild(icon);
         if(updateTitle){
             document.title = titleRenderer.call(this, animValue || value, oldTitle);
         }
@@ -252,6 +256,7 @@ var FavIconX = (function() {
     // either we already have a favicon and we want to keep it for resets...
     // or we create one that we call bob and that we care for
     function getIconRef(){
+        head = document.getElementsByTagName('head')[0];
         var els = document.getElementsByTagName('link');
         if(els.length > 0){
             for(var i=0; i<els.length; i++){
@@ -265,7 +270,7 @@ var FavIconX = (function() {
         var newIcon = document.createElement('link');
         newIcon.setAttribute('rel', 'shortcut icon');
         newIcon.setAttribute('type', 'image/png');
-        document.getElementsByTagName('head')[0].appendChild(newIcon);
+        head.appendChild(newIcon);
         return newIcon;
     }
 
@@ -365,7 +370,9 @@ var FavIconX = (function() {
         reset: function(){
             setDefaults();
             if(originalIcon){
-                icon.setAttribute('href', originalIcon.getAttribute('href'));
+                head.removeChild(icon);
+                icon = originalIcon.cloneNode(true);
+                head.appendChild(icon);
             }
             if(updateTitle){
                 document.title = oldTitle;
@@ -388,6 +395,3 @@ var FavIconX = (function() {
         }
     };
 })();
-
-
-
