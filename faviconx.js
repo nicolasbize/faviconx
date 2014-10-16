@@ -4,8 +4,8 @@
  *
  * Author:       Nicolas Bize
  * Created:      Oct 10th 2013
- * Last Updated: Oct 15th 2014
- * Version:      1.0.0
+ * Last Updated: Oct 16th 2014
+ * Version:      1.0.1
  * Licence:      FavIconX is licenced under MIT licence (http://opensource.org/licenses/MIT)
  */
 var FavIconX = (function() {
@@ -307,6 +307,7 @@ var FavIconX = (function() {
     function stopAnim(){
         if(animCallback){
             animCallback.call(this, value);
+            animCallback = null;
         }
     }
 
